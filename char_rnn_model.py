@@ -132,19 +132,29 @@ class CharRNN(object):
 
     with tf.name_scope('flatten_targets'):
       # Flatten the targets too.
-      flat_targets = tf.reshape(tf.concat(axis=1, values=self.targets), [-1])
+      flat_targets = tf.reshape(tf.concat(axis=1, values=self.targets), [-1, 1])
     
     # Create softmax parameters, weights and bias.
     with tf.variable_scope('softmax') as sm_vs:
-      softmax_w = tf.get_variable("softmax_w", [hidden_size, vocab_size])
+      softmax_w = tf.get_variable("softmax_w", [vocab_size, hidden_size])
       softmax_b = tf.get_variable("softmax_b", [vocab_size])
-      self.logits = tf.matmul(flat_outputs, softmax_w) + softmax_b
+      self.logits = tf.matmul(flat_outputs, tf.transpose(softmax_w)) + softmax_b
       self.probs = tf.nn.softmax(self.logits)
 
     with tf.name_scope('loss'):
+      """
       # Compute mean cross entropy loss for each output.
       loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
         logits=self.logits, labels=flat_targets)
+      """
+      loss = tf.nn.sampled_softmax_loss(
+        weights=softmax_w,
+        biases=softmax_b,
+        labels=flat_targets,
+        inputs=flat_outputs,
+        num_sampled=50,
+        num_classes=vocab_size,
+        partition_strategy='div')
       self.mean_loss = tf.reduce_mean(loss)
 
     with tf.name_scope('loss_monitor'):
