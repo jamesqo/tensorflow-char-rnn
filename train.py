@@ -267,7 +267,8 @@ def main():
         # Use try and finally to make sure that intermediate
         # results are saved correctly so that training can
         # be continued later after interruption.
-        with tf.Session(graph=graph) as session:
+        config = tf.ConfigProto(intra_op_parallelism_threads=4)
+        with tf.Session(config=config, graph=graph) as session:
             graph_info = session.graph
 
             train_writer = tf.summary.FileWriter(args.tb_log_dir + 'train/', graph_info)
