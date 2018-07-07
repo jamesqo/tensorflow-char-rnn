@@ -193,7 +193,8 @@ class CharRNN(object):
                                                 global_step=self.global_step)
       
   def run_epoch(self, session, data_size, batch_generator, is_training,
-                verbose=0, freq=10, summary_writer=None, debug=False, divide_by_n=1):
+                verbose=0, freq=10, summary_writer=None, debug=False, divide_by_n=1,
+                run_options=None, run_metadata=None):
     """Runs the model on the given data for one full pass."""
     # epoch_size = ((data_size // self.batch_size) - 1) // self.num_unrollings
     epoch_size = data_size // (self.batch_size * self.num_unrollings)
@@ -213,7 +214,9 @@ class CharRNN(object):
 
     # Prepare initial state and reset the average loss
     # computation.
-    state = session.run(self.zero_state)
+    run_params = dict(options=run_options,
+                      run_metadata=run_metadata)
+    state = session.run(self.zero_state, **run_params)
     self.reset_loss_monitor.run()
     start_time = time.time()
     for step in range(epoch_size // divide_by_n):
@@ -228,7 +231,7 @@ class CharRNN(object):
       feed_dict = {self.input_data: inputs, self.targets: targets,
                    self.initial_state: state}
 
-      results = session.run(ops, feed_dict)
+      results = session.run(ops, feed_dict, **run_params)
       average_loss, state, _, summary_str, global_step, lr = results
       
       ppl = np.exp(average_loss)
@@ -381,4 +384,3 @@ def create_tuple_placeholders(dtype, extra_dims, shape):
     else:
       result = t(*subplaceholders)
   return result
-  

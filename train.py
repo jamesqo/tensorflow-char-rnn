@@ -273,6 +273,9 @@ def main():
             train_writer = tf.summary.FileWriter(args.tb_log_dir + 'train/', graph_info)
             valid_writer = tf.summary.FileWriter(args.tb_log_dir + 'valid/', graph_info)
 
+            run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
+            run_metadata = tf.RunMetadata()
+
             # load a saved model or start from random initialization.
             if args.init_model:
                 saver.restore(session, args.init_model)
@@ -291,7 +294,10 @@ def main():
                         is_training=True,
                         verbose=args.verbose,
                         freq=args.progress_freq,
-                        divide_by_n=args.n_save)
+                        summary_writer=train_writer,
+                        divide_by_n=args.n_save,
+                        run_options=run_options,
+                        run_metadata=run_metadata)
                     # record the summary
                     train_writer.add_summary(train_summary_str, global_step)
                     train_writer.flush()
@@ -308,7 +314,10 @@ def main():
                         valid_batches, 
                         is_training=False,
                         verbose=args.verbose,
-                        freq=args.progress_freq)
+                        summary_writer=valid_writer,
+                        freq=args.progress_freq,
+                        run_options=run_options,
+                        run_metadata=run_metadata)
 
                     # save and update best model
                     if (not best_model) or (valid_ppl < best_valid_ppl):
